@@ -1,0 +1,25 @@
+// Demo DSL dla statycznego obrazu.
+// Podmien sciezke source na istniejacy plik JPG albo PNG.
+
+let targetWidth = 120;
+let thresholdValue = 90;
+let applyThreshold = true;
+
+source "input.jpg";
+sample every 1 frames;
+fps 12;
+set width = targetWidth;
+set charset = "@%#*+=-:. ";
+
+if (applyThreshold and targetWidth > 80) {
+    filter threshold(thresholdValue);
+} else {
+    filter grayscale;
+}
+
+for (let i = 0; i < 1; i = i + 1) {
+    filter invert;
+}
+
+export ascii to "out/result.txt";
+export json to "out/result.json";

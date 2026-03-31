@@ -1,0 +1,15 @@
+// Test PNG dla obrazu statycznego.
+
+let targetWidth = 100;
+
+source "C:\\Users\\danie\\Downloads\\Tangiro.png";
+sample every 1 frames;
+fps 12;
+set width = targetWidth;
+set charset = "@%#*+=-:. ";
+set invert = false;
+
+filter grayscale;
+
+export ascii to "D:\\studia\\Mag-II-stoień\\Semestr 1\\Modelowanie i analiza systemów informatycznych Laboratorium\\Exit\\tangiro.txt";
+export json to "D:\\studia\\Mag-II-stoień\\Semestr 1\\Modelowanie i analiza systemów informatycznych Laboratorium\\Exit\\tangiro.json";
