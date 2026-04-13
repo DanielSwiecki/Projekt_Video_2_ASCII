@@ -1,15 +1,8 @@
-// Test PNG dla obrazu statycznego.
-
-let targetWidth = 100;
-
-source "C:\\Users\\danie\\Downloads\\Tangiro.png";
-sample every 1 frames;
-fps 12;
-set width = targetWidth;
-set charset = "@%#*+=-:. ";
-set invert = false;
-
-filter grayscale;
-
-export ascii to "D:\\studia\\Mag-II-stoień\\Semestr 1\\Modelowanie i analiza systemów informatycznych Laboratorium\\Exit\\tangiro.txt";
-export json to "D:\\studia\\Mag-II-stoień\\Semestr 1\\Modelowanie i analiza systemów informatycznych Laboratorium\\Exit\\tangiro.json";
+//należy wstawić swoją ścieżkę do pliku mp4 albo gif
+source "C:\Users\Gabrysia\Desktop\studia\sem 1 mgr\antlr_lab\input.mp4";
+fps 8;
+sample every 2 frames;
+set width = 120;
+set charset = " .:-=+*#%@";
+//set charset = "@%#*+=-:. ";
+play;

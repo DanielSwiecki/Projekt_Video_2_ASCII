@@ -9,18 +9,13 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-public final class AsciiImageService {
-    private AsciiImageService() {
+public final class AsciiRenderService {
+    public AsciiRenderService() {
     }
 
-    public static String renderAscii(AsciiRenderPlan plan) throws IOException {
-        if (plan.getSourcePath() == null) {
-            throw new IllegalStateException("Source image is not configured.");
-        }
-
-        BufferedImage image = ImageIO.read(plan.getSourcePath().toFile());
+    public static String renderAscii(BufferedImage image, AsciiRenderPlan plan) throws IOException {
         if (image == null) {
-            throw new IOException("Unsupported or unreadable image: " + plan.getSourcePath());
+            throw new IOException("Image is null.");
         }
 
         int targetWidth = Math.max(1, plan.getWidth());
@@ -61,6 +56,19 @@ public final class AsciiImageService {
         }
 
         return builder.toString();
+    }
+
+    public static String renderAscii(AsciiRenderPlan plan) throws IOException {
+        if (plan.getSourcePath() == null) {
+            throw new IllegalStateException("Source image is not configured.");
+        }
+
+        BufferedImage image = ImageIO.read(plan.getSourcePath().toFile());
+        if (image == null) {
+            throw new IOException("Unsupported or unreadable image: " + plan.getSourcePath());
+        }
+
+        return renderAscii(image, plan);
     }
 
     public static void writeAsciiFile(String ascii, Path outputPath) throws IOException {

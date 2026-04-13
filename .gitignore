@@ -25,6 +25,9 @@ dist/
 target/
 dist/
 
+# klatki
+tmp/
+
 # JetBrains IDE
 .idea/
 

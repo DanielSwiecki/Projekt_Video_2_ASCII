@@ -11,12 +11,19 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 
+import model.PlaybackPlan;
+
 public class AsciiProgramVisitor extends AsciiFlowBaseVisitor<Value> {
     private final LocalSymbols<Value> symbols = new LocalSymbols<>();
     private final AsciiRenderPlan plan = new AsciiRenderPlan();
+    private final PlaybackPlan playbackPlan = new PlaybackPlan();
 
     public AsciiRenderPlan getPlan() {
         return plan;
+    }
+
+    public PlaybackPlan getPlaybackPlan() {
+        return playbackPlan;
     }
 
     @Override
@@ -25,6 +32,16 @@ public class AsciiProgramVisitor extends AsciiFlowBaseVisitor<Value> {
         for (AsciiFlowParser.StatementContext statement : ctx.statement()) {
             last = visit(statement);
         }
+
+        if (playbackPlan.isPlay()) {
+            try {
+                VideoAsciiPipeline pipeline = new VideoAsciiPipeline(plan, playbackPlan);
+                pipeline.run(playbackPlan);
+            } catch (Exception e) {
+                throw new RuntimeException("Video playback error: " + e.getMessage(), e);
+            }
+        }
+
         return last;
     }
 
@@ -58,19 +75,28 @@ public class AsciiProgramVisitor extends AsciiFlowBaseVisitor<Value> {
 
     @Override
     public Value visitSourceStmt(AsciiFlowParser.SourceStmtContext ctx) {
-        plan.setSourcePath(Paths.get(visit(ctx.expr()).asString()));
+        String source = visit(ctx.expr()).asString();
+        Path sourcePath = Paths.get(source);
+
+        plan.setSourcePath(sourcePath);
+
+        playbackPlan.setSourcePath(sourcePath.toString());   // albo sourcePath, zależnie jak masz w PlaybackPlan
         return Value.NULL;
     }
 
     @Override
     public Value visitSampleStmt(AsciiFlowParser.SampleStmtContext ctx) {
-        plan.setSampleEvery(requirePositiveInt(visit(ctx.expr()), ctx, "sample"));
+        int sampleEvery = requirePositiveInt(visit(ctx.expr()), ctx, "sample");
+        plan.setSampleEvery(sampleEvery);
+        playbackPlan.setSampleEvery(sampleEvery);
         return Value.NULL;
     }
 
     @Override
     public Value visitFpsStmt(AsciiFlowParser.FpsStmtContext ctx) {
-        plan.setFps(requirePositiveInt(visit(ctx.expr()), ctx, "fps"));
+        int fps = requirePositiveInt(visit(ctx.expr()), ctx, "fps");
+        plan.setFps(fps);
+        playbackPlan.setFps(fps);
         return Value.NULL;
     }
 
@@ -81,21 +107,26 @@ public class AsciiProgramVisitor extends AsciiFlowBaseVisitor<Value> {
 
         switch (property) {
             case "width":
-                plan.setWidth(requirePositiveInt(value, ctx, "width"));
+                int width = requirePositiveInt(value, ctx, "width");
+                plan.setWidth(width);
+                playbackPlan.setWidth(width);
                 break;
+
             case "charset":
                 String charset = value.asString();
                 if (charset.isEmpty()) {
                     throw error(ctx, "charset cannot be empty");
                 }
                 plan.setCharset(charset);
+                playbackPlan.setCharset(charset);
                 break;
+
             case "invert":
-                plan.setInvert(value.asBoolean());
+                boolean invert = value.asBoolean();
+                plan.setInvert(invert);
+                playbackPlan.setInvert(invert);
                 break;
-            case "threshold":
-                plan.setThreshold(requireByte(value, ctx, "threshold"));
-                break;
+
             default:
                 throw error(ctx, "unknown property '" + property + "'");
         }
@@ -122,6 +153,9 @@ public class AsciiProgramVisitor extends AsciiFlowBaseVisitor<Value> {
                 }
                 plan.setInvert(true);
                 plan.getFilters().add("invert");
+
+                playbackPlan.setInvert(true);
+                playbackPlan.getFilters().add("invert");
                 break;
             case "threshold":
                 if (args.size() != 1) {
@@ -130,6 +164,8 @@ public class AsciiProgramVisitor extends AsciiFlowBaseVisitor<Value> {
                 int threshold = requireByte(visit(args.get(0)), ctx, "threshold");
                 plan.setThreshold(threshold);
                 plan.getFilters().add("threshold(" + threshold + ")");
+
+                playbackPlan.getFilters().add("threshold(" + threshold + ")");
                 break;
             default:
                 throw error(ctx, "unknown filter '" + filterName + "'");
@@ -148,10 +184,10 @@ public class AsciiProgramVisitor extends AsciiFlowBaseVisitor<Value> {
 
         try {
             if (ctx.ASCII() != null) {
-                String ascii = AsciiImageService.renderAscii(plan);
-                AsciiImageService.writeAsciiFile(ascii, outputPath);
+                String ascii = AsciiRenderService.renderAscii(plan);
+                AsciiRenderService.writeAsciiFile(ascii, outputPath);
             } else {
-                AsciiImageService.writeJsonFile(plan, outputPath);
+                AsciiRenderService.writeJsonFile(plan, outputPath);
             }
         } catch (IOException e) {
             throw error(ctx, "I/O error: " + e.getMessage());
@@ -394,5 +430,10 @@ public class AsciiProgramVisitor extends AsciiFlowBaseVisitor<Value> {
             }
         }
         return builder.toString();
+    }
+    @Override
+    public Value visitPlayStmt(AsciiFlowParser.PlayStmtContext ctx) {
+        playbackPlan.setPlay(true);
+        return Value.NULL;
     }
 }

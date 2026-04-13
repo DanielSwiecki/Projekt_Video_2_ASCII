@@ -1,9 +1,9 @@
 grammar AsciiFlow;
-
+/*
 @header {
 package grammar;
 }
-
+*/
 program
     : statement* EOF
     ;
@@ -20,10 +20,15 @@ statement
     | ifStmt
     | forStmt
     | block
+    | playStmt
     ;
 
 block
     : LBRACE statement* RBRACE
+    ;
+
+playStmt
+    : 'play' ';'
     ;
 
 varDecl
