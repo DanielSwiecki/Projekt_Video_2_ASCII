@@ -9,14 +9,26 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.RecognitionException;
 import org.antlr.v4.runtime.Recognizer;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 public class Start {
     public static void main(String[] args) {
+        String scriptPath = args.length > 0 ? args[0] : "cat_video.first";
         CharStream input;
+        Path scriptFilePath;
         try {
-            String scriptPath = args.length > 0 ? args[0] : "tangiro.first";
+            Path path = Path.of(scriptPath);
+            if (!Files.exists(path)) {
+                throw new IllegalArgumentException(
+                        "Script file does not exist: " + path.toAbsolutePath() + System.lineSeparator()
+                                + "Usage: java interpreter.Start <script.first>"
+                );
+            }
+            scriptFilePath = path.toAbsolutePath().normalize();
             input = CharStreams.fromFileName(scriptPath);
         } catch (Exception e) {
-            throw new RuntimeException("Cannot read script file.", e);
+            throw new RuntimeException("Cannot read script file: " + scriptPath, e);
         }
 
         AsciiFlowLexer lexer = new AsciiFlowLexer(input);
@@ -32,7 +44,8 @@ public class Start {
             }
         });
 
-        AsciiProgramVisitor visitor = new AsciiProgramVisitor();
+        Path scriptDirectory = scriptFilePath.getParent();
+        AsciiProgramVisitor visitor = new AsciiProgramVisitor(scriptDirectory);
         visitor.visit(parser.program());
     }
 }

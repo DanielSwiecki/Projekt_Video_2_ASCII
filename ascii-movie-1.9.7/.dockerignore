@@ -1,0 +1,10 @@
+**/.DS_Store
+.dockerignore
+.git/
+.github/
+.idea/
+.pre-commit-config.yaml
+data/
+compose.yml
+ascii-movie
+vendor/

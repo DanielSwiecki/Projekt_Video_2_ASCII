@@ -14,6 +14,19 @@ import java.util.List;
 public class AsciiProgramVisitor extends AsciiFlowBaseVisitor<Value> {
     private final LocalSymbols<Value> symbols = new LocalSymbols<>();
     private final AsciiRenderPlan plan = new AsciiRenderPlan();
+    private final Path scriptDirectory;
+    private AsciiAnimation cachedAnimation;
+    private Path lastAnimationFramesDirectory;
+
+    public AsciiProgramVisitor() {
+        this(Paths.get("").toAbsolutePath().normalize());
+    }
+
+    public AsciiProgramVisitor(Path scriptDirectory) {
+        this.scriptDirectory = scriptDirectory == null
+                ? Paths.get("").toAbsolutePath().normalize()
+                : scriptDirectory.toAbsolutePath().normalize();
+    }
 
     public AsciiRenderPlan getPlan() {
         return plan;
@@ -58,19 +71,22 @@ public class AsciiProgramVisitor extends AsciiFlowBaseVisitor<Value> {
 
     @Override
     public Value visitSourceStmt(AsciiFlowParser.SourceStmtContext ctx) {
-        plan.setSourcePath(Paths.get(visit(ctx.expr()).asString()));
+        plan.setSourcePath(resolvePath(visit(ctx.expr()).asString()));
+        invalidateAnimationCache();
         return Value.NULL;
     }
 
     @Override
     public Value visitSampleStmt(AsciiFlowParser.SampleStmtContext ctx) {
         plan.setSampleEvery(requirePositiveInt(visit(ctx.expr()), ctx, "sample"));
+        invalidateAnimationCache();
         return Value.NULL;
     }
 
     @Override
     public Value visitFpsStmt(AsciiFlowParser.FpsStmtContext ctx) {
         plan.setFps(requirePositiveInt(visit(ctx.expr()), ctx, "fps"));
+        invalidateAnimationCache();
         return Value.NULL;
     }
 
@@ -90,6 +106,23 @@ public class AsciiProgramVisitor extends AsciiFlowBaseVisitor<Value> {
                 }
                 plan.setCharset(charset);
                 break;
+            case "fontName":
+                String fontName = value.asString();
+                if (fontName.isEmpty()) {
+                    throw error(ctx, "fontName cannot be empty");
+                }
+                plan.setFontName(fontName);
+                break;
+            case "fontSize":
+                plan.setFontSize(requirePositiveInt(value, ctx, "fontSize"));
+                break;
+            case "ffmpegPath":
+                String ffmpegPath = value.asString();
+                if (ffmpegPath.isEmpty()) {
+                    throw error(ctx, "ffmpegPath cannot be empty");
+                }
+                plan.setFfmpegPath(resolvePath(ffmpegPath).toString());
+                break;
             case "invert":
                 plan.setInvert(value.asBoolean());
                 break;
@@ -99,6 +132,7 @@ public class AsciiProgramVisitor extends AsciiFlowBaseVisitor<Value> {
             default:
                 throw error(ctx, "unknown property '" + property + "'");
         }
+        invalidateAnimationCache();
         return Value.NULL;
     }
 
@@ -135,6 +169,7 @@ public class AsciiProgramVisitor extends AsciiFlowBaseVisitor<Value> {
                 throw error(ctx, "unknown filter '" + filterName + "'");
         }
 
+        invalidateAnimationCache();
         return Value.NULL;
     }
 
@@ -144,14 +179,34 @@ public class AsciiProgramVisitor extends AsciiFlowBaseVisitor<Value> {
             throw error(ctx, "source must be configured before export");
         }
 
-        Path outputPath = Paths.get(visit(ctx.expr()).asString());
+        Path outputPath = resolvePath(visit(ctx.expr()).asString());
 
         try {
             if (ctx.ASCII() != null) {
-                String ascii = AsciiImageService.renderAscii(plan);
-                AsciiImageService.writeAsciiFile(ascii, outputPath);
+                MediaType mediaType = AsciiAnimationService.detectMediaType(plan.getSourcePath());
+                if (AsciiAnimationService.isAnimated(mediaType)) {
+                    AsciiAnimation animation = getOrLoadAnimation();
+                    if (looksLikeFilePath(outputPath)) {
+                        throw error(ctx, "Animated ASCII export requires a directory path, not a single .txt file");
+                    }
+                    AsciiAnimationService.exportAnimationFrames(animation, outputPath);
+                    lastAnimationFramesDirectory = outputPath.toAbsolutePath().normalize();
+                } else {
+                    String ascii = AsciiImageService.renderAscii(plan);
+                    AsciiImageService.writeAsciiFile(ascii, outputPath);
+                    AsciiImageService.writeHtmlPreview(ascii, plan, outputPath);
+                }
             } else {
-                AsciiImageService.writeJsonFile(plan, outputPath);
+                MediaType mediaType = AsciiAnimationService.detectMediaType(plan.getSourcePath());
+                if (AsciiAnimationService.isAnimated(mediaType)) {
+                    if (lastAnimationFramesDirectory == null) {
+                        throw error(ctx, "For animated media, export ascii to a directory before export json");
+                    }
+                    AsciiAnimation animation = getOrLoadAnimation();
+                    AsciiAnimationService.writeAnimationJson(animation, plan, outputPath, lastAnimationFramesDirectory);
+                } else {
+                    AsciiImageService.writeJsonFile(plan, outputPath);
+                }
             }
         } catch (IOException e) {
             throw error(ctx, "I/O error: " + e.getMessage());
@@ -365,6 +420,23 @@ public class AsciiProgramVisitor extends AsciiFlowBaseVisitor<Value> {
         return new RuntimeException("Line " + ctx.getStart().getLine() + ": " + message);
     }
 
+    private void invalidateAnimationCache() {
+        cachedAnimation = null;
+        lastAnimationFramesDirectory = null;
+    }
+
+    private AsciiAnimation getOrLoadAnimation() throws IOException {
+        if (cachedAnimation == null) {
+            cachedAnimation = AsciiAnimationService.loadAnimation(plan);
+        }
+        return cachedAnimation;
+    }
+
+    private boolean looksLikeFilePath(Path path) {
+        String fileName = path.getFileName() == null ? "" : path.getFileName().toString();
+        return fileName.contains(".");
+    }
+
     private String unquote(String text) {
         String body = text.substring(1, text.length() - 1);
         StringBuilder builder = new StringBuilder(body.length());
@@ -394,5 +466,13 @@ public class AsciiProgramVisitor extends AsciiFlowBaseVisitor<Value> {
             }
         }
         return builder.toString();
+    }
+
+    private Path resolvePath(String rawPath) {
+        Path candidate = Paths.get(rawPath);
+        if (candidate.isAbsolute()) {
+            return candidate.normalize();
+        }
+        return scriptDirectory.resolve(candidate).normalize();
     }
 }

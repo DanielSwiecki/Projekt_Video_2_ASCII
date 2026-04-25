@@ -1,0 +1,17 @@
+// Test MP4 dla animacji ASCII.
+// Ustaw ffmpegPath na prawdziwa sciezke do ffmpeg.exe, jesli nie masz go w PATH.
+
+source "cat_video.mp4";
+sample every 2 frames;
+fps 12;
+set width = 100;
+set charset = "@%#*+=-:. ";
+set fontName = "Consolas";
+set fontSize = 16;
+set invert = true;
+set ffmpegPath = "C:\\Users\\danie\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\\ffmpeg-8.1-full_build\\bin\\ffmpeg.exe";
+
+filter grayscale;
+
+export ascii to "..\\Exit\\cat_frames";
+export json to "..\\Exit\\cat_manifest.json";

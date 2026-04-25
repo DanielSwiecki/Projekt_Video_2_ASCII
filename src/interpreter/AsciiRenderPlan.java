@@ -10,6 +10,9 @@ public class AsciiRenderPlan {
     private int fps = 12;
     private int width = 120;
     private String charset = "@%#*+=-:. ";
+    private String fontName = "Consolas";
+    private int fontSize = 16;
+    private String ffmpegPath = "ffmpeg";
     private boolean invert = false;
     private Integer threshold = null;
     private final List<String> filters = new ArrayList<>();
@@ -52,6 +55,30 @@ public class AsciiRenderPlan {
 
     public void setCharset(String charset) {
         this.charset = charset;
+    }
+
+    public String getFontName() {
+        return fontName;
+    }
+
+    public void setFontName(String fontName) {
+        this.fontName = fontName;
+    }
+
+    public int getFontSize() {
+        return fontSize;
+    }
+
+    public void setFontSize(int fontSize) {
+        this.fontSize = fontSize;
+    }
+
+    public String getFfmpegPath() {
+        return ffmpegPath;
+    }
+
+    public void setFfmpegPath(String ffmpegPath) {
+        this.ffmpegPath = ffmpegPath;
     }
 
     public boolean isInvert() {

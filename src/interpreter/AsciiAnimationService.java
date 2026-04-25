@@ -206,6 +206,7 @@ public final class AsciiAnimationService {
         ProcessBuilder processBuilder = new ProcessBuilder(
                 ffmpegPath.toString(),
                 "-y",
+                "-loglevel", "error",
                 "-i", plan.getSourcePath().toString(),
                 "-vf", "fps=" + Math.max(1, plan.getFps()),
                 outputPattern.toString()
@@ -218,9 +219,10 @@ public final class AsciiAnimationService {
             throw new IOException("Cannot start ffmpeg. Set ffmpegPath to a valid ffmpeg.exe path or add ffmpeg to PATH.", e);
         }
         try {
+            // Drain ffmpeg output before waiting, otherwise the process can block on a full pipe buffer.
+            String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
             int exitCode = process.waitFor();
             if (exitCode != 0) {
-                String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
                 throw new IOException("ffmpeg failed with exit code " + exitCode + ": " + output);
             }
         } catch (InterruptedException e) {

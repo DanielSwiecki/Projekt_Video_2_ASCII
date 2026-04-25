@@ -7,9 +7,11 @@ sample every 1 frames;
 fps 12;
 set width = targetWidth;
 set charset = "@%#*+=-:. ";
-set invert = false;
+set fontName = "Consolas";
+set fontSize = 16;
+set invert = true;
 
 filter grayscale;
 
-export ascii to "D:\\studia\\Mag-II-stoień\\Semestr 1\\Modelowanie i analiza systemów informatycznych Laboratorium\\Exit\\tangiro.txt";
-export json to "D:\\studia\\Mag-II-stoień\\Semestr 1\\Modelowanie i analiza systemów informatycznych Laboratorium\\Exit\\tangiro.json";
+export ascii to "..\\Exit\\tangiro.txt";
+export json to "..\\Exit\\tangiro.json";

@@ -1,0 +1,5 @@
+let targetWidth = 30;
+source "C:\\Users\\danie\\Downloads\\Tangiro.png";
+set width = targetWidth;
+set invert = true;
+export json to "out\\invert_only.json";

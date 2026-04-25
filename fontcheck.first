@@ -1,0 +1,11 @@
+let targetWidth = 60;
+
+source "C:\\Users\\danie\\Downloads\\Tangiro.png";
+set width = targetWidth;
+set charset = "@%#*+=-:. ";
+set fontName = "Consolas";
+set fontSize = 16;
+set invert = false;
+
+export ascii to "out/fontcheck.txt";
+export json to "out/fontcheck.json";

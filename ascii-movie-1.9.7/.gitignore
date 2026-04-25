@@ -1,0 +1,23 @@
+.DS_Store
+vendor
+ascii-movie
+ascii-movie.mp4
+movies/*.gz
+id_ed25519*
+
+# local env files
+.env.local
+.env.*.local
+
+# Editor directories and files
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+/dist/
+/completions/
+/manpages/
